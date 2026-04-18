@@ -3,21 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hızlı Kasa - Profesyonel Pratik</title>
+    <title>Hızlı Kasa - Sadece Para Üstü</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f1f3f5; }
         .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 360px; text-align: center; }
         .order-info { background: #fff9db; border: 2px solid #fcc419; padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: left; font-size: 1.1rem; color: #444; min-height: 60px; display: flex; flex-direction: column; justify-content: center; }
         .money-box { background: #e7f5ff; color: #1971c2; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 1.2rem; border: 1px solid #a5d8ff; }
-        input { width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #dee2e6; border-radius: 8px; box-sizing: border-box; font-size: 1.1rem; }
-        input:focus { border-color: #339af0; outline: none; }
-        button { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; background: #40c057; color: white; transition: 0.2s; }
+        input { width: 100%; padding: 15px; margin-bottom: 15px; border: 2px solid #dee2e6; border-radius: 8px; box-sizing: border-box; font-size: 1.3rem; text-align: center; }
+        input:focus { border-color: #339af0; outline: none; background: #fff; }
+        button { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1.1rem; background: #40c057; color: white; transition: 0.2s; }
         button:hover { background: #37b24d; }
         #feedback { margin-top: 15px; font-weight: bold; min-height: 50px; line-height: 1.4; }
         .success { color: #2f9e44; }
         .error { color: #e03131; }
         .stats { margin-top: 15px; font-size: 0.8rem; color: #adb5bd; border-top: 1px solid #eee; padding-top: 10px; }
         .order-item { margin: 4px 0; }
+        label { display: block; margin-bottom: 8px; font-size: 0.9rem; color: #666; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -28,10 +29,10 @@
     <div id="order" class="order-info"></div>
     <div id="money" class="money-box"></div>
 
-    <input type="number" id="totalInput" placeholder="Toplam Tutar?" step="0.5">
-    <input type="number" id="changeInput" placeholder="Para Üstü?" step="0.5">
+    <label for="changeInput">VERİLECEK PARA ÜSTÜ</label>
+    <input type="number" id="changeInput" placeholder="0.00" step="0.5" autofocus>
     
-    <button onclick="kontrolEt()">HESAPLA</button>
+    <button onclick="kontrolEt()">PARA ÜSTÜNÜ VER</button>
 
     <div id="feedback"></div>
     <div id="stats" class="stats">Doğru: 0 | Yanlış: 0</div>
@@ -51,7 +52,7 @@
         let tamamlayici = banknotlar.find(b => b >= kalan);
         
         let kombinasyon = buyukBanknot + tamamlayici;
-        let tekUstBanknot = banknotlar.find(b => b >= toplam) || 400;
+        let tekUstBanknot = banknotlar.find(b => b >= toplam) || (Math.ceil(toplam / 100) * 100);
 
         return Math.min(kombinasyon, tekUstBanknot);
     }
@@ -63,13 +64,11 @@
 
         data.toplam = (ekmekAdet * 17.5) + (urunAdet * urunFiyat);
         
-        // Eğer her iki ürün de 0 gelirse (şans eseri), tekrar dene
         if (data.toplam === 0) return yeniMusteri();
 
         let verilen = odemeHesapla(data.toplam);
         data.paraUstu = verilen - data.toplam;
 
-        // Ekrana yazdırma mantığı (Sadece 0'dan büyükse göster)
         let htmlIcerik = "";
         if (ekmekAdet > 0) {
             htmlIcerik += `<div class="order-item">🥖 <strong>${ekmekAdet}</strong> Ekmek (17.5 TL)</div>`;
@@ -81,23 +80,23 @@
         document.getElementById('order').innerHTML = htmlIcerik;
         document.getElementById('money').innerText = `Müşteri ${verilen} TL verdi.`;
         
-        document.getElementById('totalInput').value = '';
         document.getElementById('changeInput').value = '';
         document.getElementById('feedback').innerText = '';
-        document.getElementById('totalInput').focus();
+        document.getElementById('changeInput').focus();
     }
 
     function kontrolEt() {
-        const tIn = parseFloat(document.getElementById('totalInput').value);
         const cIn = parseFloat(document.getElementById('changeInput').value);
         const f = document.getElementById('feedback');
 
-        if (tIn === data.toplam && cIn === data.paraUstu) {
-            f.innerHTML = "<span class='success'>✅ DOĞRU!<br>Sıradaki müşteri geliyor...</span>";
+        if (isNaN(cIn)) return;
+
+        if (cIn === data.paraUstu) {
+            f.innerHTML = "<span class='success'>✅ DOĞRU!<br>Sıradaki müşteri...</span>";
             skor.d++;
-            setTimeout(yeniMusteri, 1500);
+            setTimeout(yeniMusteri, 1200);
         } else {
-            f.innerHTML = `<span class='error'>❌ HATALI!<br>Toplam: ${data.toplam} | P.Üstü: ${data.paraUstu}</span>`;
+            f.innerHTML = `<span class='error'>❌ HATALI!<br>Doğru Para Üstü: ${data.paraUstu} TL</span>`;
             skor.y++;
         }
         document.getElementById('stats').innerText = `Doğru: ${skor.d} | Yanlış: ${skor.y}`;
@@ -105,9 +104,6 @@
 
     yeniMusteri();
 
-    document.getElementById('totalInput').addEventListener('keypress', (e) => { 
-        if(e.key === 'Enter') document.getElementById('changeInput').focus(); 
-    });
     document.getElementById('changeInput').addEventListener('keypress', (e) => { 
         if(e.key === 'Enter') kontrolEt(); 
     });
