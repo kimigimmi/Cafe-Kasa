@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerçekçi Cafe Kasa</title>
+    <title>Cafe Kasa - Pratik Modu</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f1f3f5; }
         .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 360px; text-align: center; }
         .order-info { background: #fff9db; border: 2px solid #fcc419; padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: left; font-size: 1.1rem; color: #444; min-height: 60px; display: flex; flex-direction: column; justify-content: center; }
-        .money-box { background: #e7f5ff; color: #1971c2; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 1.1rem; border: 1px solid #a5d8ff; line-height: 1.4; }
-        input { width: 100%; padding: 15px; margin-bottom: 15px; border: 2px solid #dee2e6; border-radius: 8px; box-sizing: border-box; font-size: 1.5rem; text-align: center; color: #2c3e50; }
+        .money-box { background: #e7f5ff; color: #1971c2; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 1.4rem; border: 1px solid #a5d8ff; }
+        input { width: 100%; padding: 15px; margin-bottom: 15px; border: 2px solid #dee2e6; border-radius: 8px; box-sizing: border-box; font-size: 1.6rem; text-align: center; color: #2c3e50; }
         input:focus { border-color: #339af0; outline: none; background: #fff; }
         button { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1.1rem; background: #40c057; color: white; transition: 0.2s; }
         button:hover { background: #37b24d; }
@@ -43,40 +43,48 @@
     const banknotlar = [200, 100, 50, 20, 10, 5];
 
     function odemeOlustur(hedef) {
-        let birlesen = [];
         let mevcutToplam = 0;
-
-        // Müşteri cebinden tutarı geçene kadar en mantıklı banknotları çıkarıyor
-        for (let b of banknotlar) {
-            while (mevcutToplam + b <= hedef + (b/2)) { // Hedefe yaklaş ama çok da saçma büyük para verme
-                mevcutToplam += b;
-                birlesen.push(b);
-                if (mevcutToplam >= hedef) break;
+        
+        // Müşteri önce tutarı geçen en büyük banknotu düşünebilir veya 
+        // cebindeki küçükleri birleştirip tutarı biraz geçebilir.
+        
+        if (Math.random() > 0.5) {
+            // Senaryo A: Tek bir büyük banknot (Örn: 80 TL için 100 TL)
+            mevcutToplam = banknotlar.find(b => b >= hedef) || (Math.ceil(hedef / 100) * 100);
+        } else {
+            // Senaryo B: Karışık ödeme (Örn: 80 TL için 50+20+20 = 90 TL)
+            while (mevcutToplam < hedef) {
+                // Rastgele banknot seç ama hedefe yakın tutmaya çalış
+                let uygunlar = banknotlar.filter(b => b <= (hedef - mevcutToplam + 50));
+                let secilen = uygunlar[Math.floor(Math.random() * uygunlar.length)];
+                mevcutToplam += secilen;
             }
-            if (mevcutToplam >= hedef) break;
         }
 
-        // Eğer hala hedefi bulamadıysa, hedefi geçen en küçük banknotu ekle
-        if (mevcutToplam < hedef) {
-            let eksik = hedef - mevcutToplam;
-            let tamamlayici = [...banknotlar].reverse().find(b => b >= eksik);
-            mevcutToplam += tamamlayici;
-            birlesen.push(tamamlayici);
-        }
-
-        return { liste: birlesen, toplam: mevcutToplam };
+        return mevcutToplam;
     }
 
     function yeniMusteri() {
-        const ekmekAdet = Math.floor(Math.random() * 7); 
-        const urunAdet = Math.floor(Math.random() * 3);  
-        const urunFiyat = (Math.floor(Math.random() * 17) + 4) * 5;
+        let ekmekAdet, urunAdet, urunFiyat;
+        let sans = Math.random();
+        
+        // %80 yoğunluk 100 TL altı
+        if (sans < 0.8) {
+            ekmekAdet = Math.floor(Math.random() * 4); 
+            urunAdet = Math.floor(Math.random() * 2);  
+            urunFiyat = (Math.floor(Math.random() * 7) + 4) * 5; 
+        } else {
+            // %20 150 TL civarı
+            ekmekAdet = Math.floor(Math.random() * 4) + 3; 
+            urunAdet = Math.floor(Math.random() * 2) + 1;  
+            urunFiyat = (Math.floor(Math.random() * 10) + 8) * 5; 
+        }
 
         data.toplam = (ekmekAdet * 17.5) + (urunAdet * urunFiyat);
         if (data.toplam === 0) return yeniMusteri();
 
-        let odeme = odemeOlustur(data.toplam);
-        data.paraUstu = odeme.toplam - data.toplam;
+        let verilen = odemeOlustur(data.toplam);
+        data.paraUstu = verilen - data.toplam;
 
         let htmlIcerik = "";
         if (ekmekAdet > 0) htmlIcerik += `<div>🥖 <strong>${ekmekAdet}</strong> Ekmek (17.5 TL)</div>`;
@@ -84,10 +92,10 @@
 
         document.getElementById('order').innerHTML = htmlIcerik;
         
-        // Verilen paraları "100 + 50 + 10" gibi göster
+        // Sadece net rakamı yazdır
         document.getElementById('money').innerHTML = `
             <small style="font-weight:normal; font-size:0.8rem">Müşterinin Uzattığı:</small><br>
-            ${odeme.liste.join(' + ')} = <strong>${odeme.toplam} TL</strong>
+            <strong>${verilen} TL</strong>
         `;
         
         document.getElementById('changeInput').value = '';
@@ -98,13 +106,12 @@
     function kontrolEt() {
         const cIn = parseFloat(document.getElementById('changeInput').value);
         const f = document.getElementById('feedback');
-
         if (isNaN(cIn)) return;
 
         if (cIn === data.paraUstu) {
             f.innerHTML = "<span class='success'>✅ DOĞRU!</span>";
             skor.d++;
-            setTimeout(yeniMusteri, 1000);
+            setTimeout(yeniMusteri, 800);
         } else {
             f.innerHTML = `<span class='error'>❌ HATALI!<br>Doğru Cevap: ${data.paraUstu} TL</span>`;
             skor.y++;
