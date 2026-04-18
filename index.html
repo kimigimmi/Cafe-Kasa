@@ -3,38 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profesyonel Cafe Kasa</title>
+    <title>Hızlı Kasa - Para Üstü Pratik</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f1f3f5; }
         .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 360px; text-align: center; }
         .order-info { background: #fff9db; border: 2px solid #fcc419; padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: left; font-size: 1.1rem; color: #444; min-height: 60px; display: flex; flex-direction: column; justify-content: center; }
-        .money-box { background: #e7f5ff; color: #1971c2; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 1.5rem; border: 1px solid #a5d8ff; }
-        input { width: 100%; padding: 15px; margin-bottom: 15px; border: 2px solid #dee2e6; border-radius: 8px; box-sizing: border-box; font-size: 1.6rem; text-align: center; color: #2c3e50; }
+        .money-box { background: #e7f5ff; color: #1971c2; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 1.6rem; border: 1px solid #a5d8ff; }
+        input { width: 100%; padding: 15px; margin-bottom: 15px; border: 2px solid #dee2e6; border-radius: 8px; box-sizing: border-box; font-size: 1.8rem; text-align: center; color: #2c3e50; font-weight: bold; }
         input:focus { border-color: #339af0; outline: none; background: #fff; }
-        button { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1.1rem; background: #40c057; color: white; transition: 0.2s; }
-        button:hover { background: #37b24d; }
-        #feedback { margin-top: 15px; font-weight: bold; min-height: 50px; line-height: 1.4; }
+        button { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1.2rem; background: #40c057; color: white; transition: 0.2s; box-shadow: 0 4px 0 #2f9e44; }
+        button:active { transform: translateY(2px); box-shadow: 0 2px 0 #2f9e44; }
+        #feedback { margin-top: 15px; font-weight: bold; min-height: 50px; line-height: 1.4; font-size: 1.1rem; }
         .success { color: #2f9e44; }
         .error { color: #e03131; }
-        .stats { margin-top: 15px; font-size: 0.8rem; color: #adb5bd; border-top: 1px solid #eee; padding-top: 10px; }
-        label { display: block; margin-bottom: 8px; font-size: 0.9rem; color: #666; font-weight: bold; }
+        .stats { margin-top: 15px; font-size: 0.85rem; color: #adb5bd; border-top: 1px solid #eee; padding-top: 10px; display: flex; justify-content: space-around; }
+        label { display: block; margin-bottom: 8px; font-size: 0.9rem; color: #666; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 style="margin-top:0; color: #343a40;">Kasa Simülasyonu</h2>
+    <h2 style="margin-top:0; color: #343a40; font-size: 1.5rem;">Kasa Pratiği</h2>
     
     <div id="order" class="order-info"></div>
     <div id="money" class="money-box"></div>
 
-    <label for="changeInput">VERİLECEK PARA ÜSTÜ</label>
+    <label for="changeInput">Para Üstü Ver</label>
     <input type="number" id="changeInput" placeholder="0.00" step="0.5" autofocus>
     
-    <button onclick="kontrolEt()">ÖDEMEYİ TAMAMLA</button>
+    <button onclick="kontrolEt()">PARA ÜSTÜ VER</button>
 
     <div id="feedback"></div>
-    <div id="stats" class="stats">Doğru: 0 | Yanlış: 0</div>
+    <div id="stats" class="stats">
+        <span>Doğru: <b id="d-count" style="color:#2f9e44">0</b></span>
+        <span>Yanlış: <b id="y-count" style="color:#e03131">0</b></span>
+    </div>
 </div>
 
 <script>
@@ -43,39 +46,32 @@
     const banknotlar = [200, 100, 50, 20, 10, 5];
 
     function odemeOlustur(hedef) {
-        // 1. Kural: Hedefi geçen en küçük tek banknotu bul (Örn: 192.5 -> 200)
-        let enYakinBanknot = banknotlar.slice().reverse().find(b => b >= hedef);
+        // Müşteri Psikolojisi: Önce en yakın tek banknotu (50, 100, 200) kontrol et
+        let anaBanknotlar = [5, 10, 20, 50, 100, 200];
+        let enYakinTek = anaBanknotlar.find(b => b >= hedef);
         
-        // 2. Kural: Eğer hedef 200'den büyükse (nadir), mecburen kombinasyon yap
-        if (!enYakinBanknot) {
-            return (Math.ceil(hedef / 50) * 50);
+        // Eğer hesap 200'ü geçmiyorsa %90 ihtimalle o tek banknotu verir
+        if (enYakinTek && Math.random() < 0.9) {
+            return enYakinTek;
         }
 
-        // 3. Kural: Müşteri bazen tam tutara çok yakın bir kombinasyon verir (Örn: 65 için 70 (50+20))
-        // Ama hedef 192.5 ise 200'den başka 210, 215 gibi saçma rakamlar vermez.
-        // %80 ihtimalle en yakın düz banknotu verir.
-        if (Math.random() < 0.8) {
-            return enYakinBanknot;
-        } else {
-            // %20 ihtimalle ufak bozukluklarla beraber verir (Örn: 35 tuttuysa 40 yerine 50 verir gibi)
-            // Ama her zaman mantıklı bir üst sınırı (hedef + 20) geçmez.
-            let alternatifler = [enYakinBanknot, enYakinBanknot + 5, enYakinBanknot + 10].filter(v => v > hedef && v <= hedef + 25);
-            return alternatifler[Math.floor(Math.random() * alternatifler.length)];
-        }
+        // Eğer 200'ü geçiyorsa veya %10 ihtimalle bozukluk eklemek istiyorsa
+        // 192.5 için 200 TL gibi mantıklı bir üst sınıra yuvarla
+        return Math.ceil(hedef / 10) * 10; 
     }
 
     function yeniMusteri() {
         let ekmekAdet, urunAdet, urunFiyat;
         let sans = Math.random();
         
-        // %80 yoğunluk 100 TL altı (Hızlı sürüm)
+        // Yoğunluk ayarı: %80 oranında 100 TL altı hızlı işlemler
         if (sans < 0.8) {
             ekmekAdet = Math.floor(Math.random() * 4); 
             urunAdet = Math.floor(Math.random() * 2);  
             urunFiyat = (Math.floor(Math.random() * 7) + 4) * 5; 
         } else {
-            // %20 100-150 TL civarı
-            ekmekAdet = Math.floor(Math.random() * 4) + 2; 
+            // %20 oranında 150 TL civarı
+            ekmekAdet = Math.floor(Math.random() * 3) + 3; 
             urunAdet = Math.floor(Math.random() * 2) + 1;  
             urunFiyat = (Math.floor(Math.random() * 10) + 6) * 5; 
         }
@@ -109,16 +105,19 @@
         if (cIn === data.paraUstu) {
             f.innerHTML = "<span class='success'>✅ DOĞRU!</span>";
             skor.d++;
-            setTimeout(yeniMusteri, 800);
+            document.getElementById('d-count').innerText = skor.d;
+            setTimeout(yeniMusteri, 700);
         } else {
-            f.innerHTML = `<span class='error'>❌ HATALI!<br>Doğru Cevap: ${data.paraUstu} TL</span>`;
+            f.innerHTML = `<span class='error'>❌ YANLIŞ!<br>Olması gereken: ${data.paraUstu} TL</span>`;
             skor.y++;
+            document.getElementById('y-count').innerText = skor.y;
         }
-        document.getElementById('stats').innerText = `Doğru: ${skor.d} | Yanlış: ${skor.y}`;
     }
 
     yeniMusteri();
-    document.getElementById('changeInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') kontrolEt(); });
+    document.getElementById('changeInput').addEventListener('keypress', (e) => { 
+        if(e.key === 'Enter') kontrolEt(); 
+    });
 </script>
 
 </body>
