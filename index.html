@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hızlı Kasa - Sadece Para Üstü</title>
+    <title>Gerçekçi Cafe Kasa</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f1f3f5; }
         .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 360px; text-align: center; }
         .order-info { background: #fff9db; border: 2px solid #fcc419; padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: left; font-size: 1.1rem; color: #444; min-height: 60px; display: flex; flex-direction: column; justify-content: center; }
-        .money-box { background: #e7f5ff; color: #1971c2; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 1.2rem; border: 1px solid #a5d8ff; }
-        input { width: 100%; padding: 15px; margin-bottom: 15px; border: 2px solid #dee2e6; border-radius: 8px; box-sizing: border-box; font-size: 1.3rem; text-align: center; }
+        .money-box { background: #e7f5ff; color: #1971c2; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 1.1rem; border: 1px solid #a5d8ff; line-height: 1.4; }
+        input { width: 100%; padding: 15px; margin-bottom: 15px; border: 2px solid #dee2e6; border-radius: 8px; box-sizing: border-box; font-size: 1.5rem; text-align: center; color: #2c3e50; }
         input:focus { border-color: #339af0; outline: none; background: #fff; }
         button { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1.1rem; background: #40c057; color: white; transition: 0.2s; }
         button:hover { background: #37b24d; }
@@ -17,7 +17,6 @@
         .success { color: #2f9e44; }
         .error { color: #e03131; }
         .stats { margin-top: 15px; font-size: 0.8rem; color: #adb5bd; border-top: 1px solid #eee; padding-top: 10px; }
-        .order-item { margin: 4px 0; }
         label { display: block; margin-bottom: 8px; font-size: 0.9rem; color: #666; font-weight: bold; }
     </style>
 </head>
@@ -41,20 +40,31 @@
 <script>
     let data = { toplam: 0, paraUstu: 0 };
     let skor = { d: 0, y: 0 };
-    const banknotlar = [5, 10, 20, 50, 100, 200];
+    const banknotlar = [200, 100, 50, 20, 10, 5];
 
-    function odemeHesapla(toplam) {
-        let uygunTek = banknotlar.find(b => b >= toplam);
-        if (uygunTek) return uygunTek;
+    function odemeOlustur(hedef) {
+        let birlesen = [];
+        let mevcutToplam = 0;
 
-        let buyukBanknot = [...banknotlar].reverse().find(b => b < toplam);
-        let kalan = toplam - buyukBanknot;
-        let tamamlayici = banknotlar.find(b => b >= kalan);
-        
-        let kombinasyon = buyukBanknot + tamamlayici;
-        let tekUstBanknot = banknotlar.find(b => b >= toplam) || (Math.ceil(toplam / 100) * 100);
+        // Müşteri cebinden tutarı geçene kadar en mantıklı banknotları çıkarıyor
+        for (let b of banknotlar) {
+            while (mevcutToplam + b <= hedef + (b/2)) { // Hedefe yaklaş ama çok da saçma büyük para verme
+                mevcutToplam += b;
+                birlesen.push(b);
+                if (mevcutToplam >= hedef) break;
+            }
+            if (mevcutToplam >= hedef) break;
+        }
 
-        return Math.min(kombinasyon, tekUstBanknot);
+        // Eğer hala hedefi bulamadıysa, hedefi geçen en küçük banknotu ekle
+        if (mevcutToplam < hedef) {
+            let eksik = hedef - mevcutToplam;
+            let tamamlayici = [...banknotlar].reverse().find(b => b >= eksik);
+            mevcutToplam += tamamlayici;
+            birlesen.push(tamamlayici);
+        }
+
+        return { liste: birlesen, toplam: mevcutToplam };
     }
 
     function yeniMusteri() {
@@ -63,22 +73,22 @@
         const urunFiyat = (Math.floor(Math.random() * 17) + 4) * 5;
 
         data.toplam = (ekmekAdet * 17.5) + (urunAdet * urunFiyat);
-        
         if (data.toplam === 0) return yeniMusteri();
 
-        let verilen = odemeHesapla(data.toplam);
-        data.paraUstu = verilen - data.toplam;
+        let odeme = odemeOlustur(data.toplam);
+        data.paraUstu = odeme.toplam - data.toplam;
 
         let htmlIcerik = "";
-        if (ekmekAdet > 0) {
-            htmlIcerik += `<div class="order-item">🥖 <strong>${ekmekAdet}</strong> Ekmek (17.5 TL)</div>`;
-        }
-        if (urunAdet > 0) {
-            htmlIcerik += `<div class="order-item">☕ <strong>${urunAdet}</strong> Ürün (Birim: ${urunFiyat} TL)</div>`;
-        }
+        if (ekmekAdet > 0) htmlIcerik += `<div>🥖 <strong>${ekmekAdet}</strong> Ekmek (17.5 TL)</div>`;
+        if (urunAdet > 0) htmlIcerik += `<div>☕ <strong>${urunAdet}</strong> Ürün (${urunFiyat} TL)</div>`;
 
         document.getElementById('order').innerHTML = htmlIcerik;
-        document.getElementById('money').innerText = `Müşteri ${verilen} TL verdi.`;
+        
+        // Verilen paraları "100 + 50 + 10" gibi göster
+        document.getElementById('money').innerHTML = `
+            <small style="font-weight:normal; font-size:0.8rem">Müşterinin Uzattığı:</small><br>
+            ${odeme.liste.join(' + ')} = <strong>${odeme.toplam} TL</strong>
+        `;
         
         document.getElementById('changeInput').value = '';
         document.getElementById('feedback').innerText = '';
@@ -92,21 +102,18 @@
         if (isNaN(cIn)) return;
 
         if (cIn === data.paraUstu) {
-            f.innerHTML = "<span class='success'>✅ DOĞRU!<br>Sıradaki müşteri...</span>";
+            f.innerHTML = "<span class='success'>✅ DOĞRU!</span>";
             skor.d++;
-            setTimeout(yeniMusteri, 1200);
+            setTimeout(yeniMusteri, 1000);
         } else {
-            f.innerHTML = `<span class='error'>❌ HATALI!<br>Doğru Para Üstü: ${data.paraUstu} TL</span>`;
+            f.innerHTML = `<span class='error'>❌ HATALI!<br>Doğru Cevap: ${data.paraUstu} TL</span>`;
             skor.y++;
         }
         document.getElementById('stats').innerText = `Doğru: ${skor.d} | Yanlış: ${skor.y}`;
     }
 
     yeniMusteri();
-
-    document.getElementById('changeInput').addEventListener('keypress', (e) => { 
-        if(e.key === 'Enter') kontrolEt(); 
-    });
+    document.getElementById('changeInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') kontrolEt(); });
 </script>
 
 </body>
