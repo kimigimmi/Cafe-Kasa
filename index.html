@@ -7,7 +7,7 @@
     <style>
         body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f1f3f5; }
         .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 360px; text-align: center; }
-        .order-info { background: #fff9db; border: 2px solid #fcc419; padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: left; font-size: 1.1rem; color: #444; }
+        .order-info { background: #fff9db; border: 2px solid #fcc419; padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: left; font-size: 1.1rem; color: #444; min-height: 60px; display: flex; flex-direction: column; justify-content: center; }
         .money-box { background: #e7f5ff; color: #1971c2; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 1.2rem; border: 1px solid #a5d8ff; }
         input { width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #dee2e6; border-radius: 8px; box-sizing: border-box; font-size: 1.1rem; }
         input:focus { border-color: #339af0; outline: none; }
@@ -17,6 +17,7 @@
         .success { color: #2f9e44; }
         .error { color: #e03131; }
         .stats { margin-top: 15px; font-size: 0.8rem; color: #adb5bd; border-top: 1px solid #eee; padding-top: 10px; }
+        .order-item { margin: 4px 0; }
     </style>
 </head>
 <body>
@@ -42,12 +43,9 @@
     const banknotlar = [5, 10, 20, 50, 100, 200];
 
     function odemeHesapla(toplam) {
-        // Tek bir banknot yetiyorsa onu ver
         let uygunTek = banknotlar.find(b => b >= toplam);
         if (uygunTek) return uygunTek;
 
-        // Kombinasyon hesapla (Örn: 130 TL için 100+50 mi yoksa 200 mü?)
-        // En büyük banknotu çıkarıp kalanı en yakın banknotla tamamlama mantığı
         let buyukBanknot = [...banknotlar].reverse().find(b => b < toplam);
         let kalan = toplam - buyukBanknot;
         let tamamlayici = banknotlar.find(b => b >= kalan);
@@ -55,28 +53,32 @@
         let kombinasyon = buyukBanknot + tamamlayici;
         let tekUstBanknot = banknotlar.find(b => b >= toplam) || 400;
 
-        // Hangisi daha mantıklıysa (daha küçük olan ödeme) onu döndür
         return Math.min(kombinasyon, tekUstBanknot);
     }
 
     function yeniMusteri() {
         const ekmekAdet = Math.floor(Math.random() * 7); 
         const urunAdet = Math.floor(Math.random() * 3);  
-        const urunFiyat = (Math.floor(Math.random() * 17) + 4) * 5; // 5'in katı
+        const urunFiyat = (Math.floor(Math.random() * 17) + 4) * 5;
 
         data.toplam = (ekmekAdet * 17.5) + (urunAdet * urunFiyat);
         
+        // Eğer her iki ürün de 0 gelirse (şans eseri), tekrar dene
         if (data.toplam === 0) return yeniMusteri();
 
         let verilen = odemeHesapla(data.toplam);
         data.paraUstu = verilen - data.toplam;
 
-        let metin = `🥖 <strong>${ekmekAdet}</strong> Ekmek (17.5 TL)`;
-        if(urunAdet > 0) {
-            metin += `<br>☕ <strong>${urunAdet}</strong> Ürün (Birim: ${urunFiyat} TL)`;
+        // Ekrana yazdırma mantığı (Sadece 0'dan büyükse göster)
+        let htmlIcerik = "";
+        if (ekmekAdet > 0) {
+            htmlIcerik += `<div class="order-item">🥖 <strong>${ekmekAdet}</strong> Ekmek (17.5 TL)</div>`;
+        }
+        if (urunAdet > 0) {
+            htmlIcerik += `<div class="order-item">☕ <strong>${urunAdet}</strong> Ürün (Birim: ${urunFiyat} TL)</div>`;
         }
 
-        document.getElementById('order').innerHTML = metin;
+        document.getElementById('order').innerHTML = htmlIcerik;
         document.getElementById('money').innerText = `Müşteri ${verilen} TL verdi.`;
         
         document.getElementById('totalInput').value = '';
@@ -91,7 +93,7 @@
         const f = document.getElementById('feedback');
 
         if (tIn === data.toplam && cIn === data.paraUstu) {
-            f.innerHTML = "<span class='success'>✅ DOĞRU!<br>Harika gidiyorsun.</span>";
+            f.innerHTML = "<span class='success'>✅ DOĞRU!<br>Sıradaki müşteri geliyor...</span>";
             skor.d++;
             setTimeout(yeniMusteri, 1500);
         } else {
