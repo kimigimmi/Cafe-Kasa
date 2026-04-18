@@ -3,25 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cafe Kasa - Pratik</title>
+    <title>Hızlı Kasa - Profesyonel Pratik</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f8f9fa; }
-        .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 360px; text-align: center; }
-        .order-info { background: #fff4e6; border: 2px solid #ff922b; padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: left; font-size: 1.1rem; }
-        .money-box { background: #e3fafc; color: #0c8599; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 1.2rem; border: 1px solid #99e9f2; }
+        body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f1f3f5; }
+        .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 360px; text-align: center; }
+        .order-info { background: #fff9db; border: 2px solid #fcc419; padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: left; font-size: 1.1rem; color: #444; }
+        .money-box { background: #e7f5ff; color: #1971c2; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 1.2rem; border: 1px solid #a5d8ff; }
         input { width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #dee2e6; border-radius: 8px; box-sizing: border-box; font-size: 1.1rem; }
-        button { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.2s; }
-        .btn-check { background: #51cf66; color: white; }
-        .btn-check:hover { background: #40c057; }
-        #feedback { margin-top: 15px; font-weight: bold; min-height: 50px; }
-        .success { color: #2b8a3e; }
-        .error { color: #c92a2a; }
+        input:focus { border-color: #339af0; outline: none; }
+        button { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; background: #40c057; color: white; transition: 0.2s; }
+        button:hover { background: #37b24d; }
+        #feedback { margin-top: 15px; font-weight: bold; min-height: 50px; line-height: 1.4; }
+        .success { color: #2f9e44; }
+        .error { color: #e03131; }
+        .stats { margin-top: 15px; font-size: 0.8rem; color: #adb5bd; border-top: 1px solid #eee; padding-top: 10px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 style="margin-top:0">Hızlı Kasa</h2>
+    <h2 style="margin-top:0; color: #343a40;">Cafe Kasa</h2>
     
     <div id="order" class="order-info"></div>
     <div id="money" class="money-box"></div>
@@ -29,38 +30,50 @@
     <input type="number" id="totalInput" placeholder="Toplam Tutar?" step="0.5">
     <input type="number" id="changeInput" placeholder="Para Üstü?" step="0.5">
     
-    <button class="btn-check" onclick="kontrolEt()">ONAYLA</button>
+    <button onclick="kontrolEt()">HESAPLA</button>
 
     <div id="feedback"></div>
+    <div id="stats" class="stats">Doğru: 0 | Yanlış: 0</div>
 </div>
 
 <script>
     let data = { toplam: 0, paraUstu: 0 };
-    const banknotlar = [20, 50, 100, 200];
+    let skor = { d: 0, y: 0 };
+    const banknotlar = [5, 10, 20, 50, 100, 200];
+
+    function odemeHesapla(toplam) {
+        // Tek bir banknot yetiyorsa onu ver
+        let uygunTek = banknotlar.find(b => b >= toplam);
+        if (uygunTek) return uygunTek;
+
+        // Kombinasyon hesapla (Örn: 130 TL için 100+50 mi yoksa 200 mü?)
+        // En büyük banknotu çıkarıp kalanı en yakın banknotla tamamlama mantığı
+        let buyukBanknot = [...banknotlar].reverse().find(b => b < toplam);
+        let kalan = toplam - buyukBanknot;
+        let tamamlayici = banknotlar.find(b => b >= kalan);
+        
+        let kombinasyon = buyukBanknot + tamamlayici;
+        let tekUstBanknot = banknotlar.find(b => b >= toplam) || 400;
+
+        // Hangisi daha mantıklıysa (daha küçük olan ödeme) onu döndür
+        return Math.min(kombinasyon, tekUstBanknot);
+    }
 
     function yeniMusteri() {
         const ekmekAdet = Math.floor(Math.random() * 7); 
         const urunAdet = Math.floor(Math.random() * 3);  
-        
-        // Fiyatı 5'in katı yap: 20'den başlayıp 100'e kadar 5'er 5'er artar
-        const urunFiyat = (Math.floor(Math.random() * 17) + 4) * 5; 
+        const urunFiyat = (Math.floor(Math.random() * 17) + 4) * 5; // 5'in katı
 
         data.toplam = (ekmekAdet * 17.5) + (urunAdet * urunFiyat);
         
         if (data.toplam === 0) return yeniMusteri();
 
-        // Müşterinin vereceği parayı belirle
-        let verilen = banknotlar.find(b => b >= data.toplam);
-        if (!verilen) {
-            // Toplam 200'ü geçerse iki tane 200 veya daha yüksek banknot simülasyonu
-            verilen = Math.ceil(data.toplam / 100) * 100;
-        }
-        
+        let verilen = odemeHesapla(data.toplam);
         data.paraUstu = verilen - data.toplam;
 
         let metin = `🥖 <strong>${ekmekAdet}</strong> Ekmek (17.5 TL)`;
         if(urunAdet > 0) {
-            metin += `<br>☕ <strong>${urunAdet}</strong> Ürün (Adet: ${urunFiyat} TL)`;
+            metin += `<br>☕ <strong>${urunAdet}</strong> Ürün (Birim: ${urunFiyat} TL)`;
         }
 
         document.getElementById('order').innerHTML = metin;
@@ -73,16 +86,19 @@
     }
 
     function kontrolEt() {
-        const tInput = parseFloat(document.getElementById('totalInput').value);
-        const cInput = parseFloat(document.getElementById('changeInput').value);
+        const tIn = parseFloat(document.getElementById('totalInput').value);
+        const cIn = parseFloat(document.getElementById('changeInput').value);
         const f = document.getElementById('feedback');
 
-        if (tInput === data.toplam && cInput === data.paraUstu) {
-            f.innerHTML = "<span class='success'>✅ DOĞRU!<br>Sıradaki müşteri geliyor...</span>";
+        if (tIn === data.toplam && cIn === data.paraUstu) {
+            f.innerHTML = "<span class='success'>✅ DOĞRU!<br>Harika gidiyorsun.</span>";
+            skor.d++;
             setTimeout(yeniMusteri, 1500);
         } else {
-            f.innerHTML = `<span class='error'>❌ HATA!<br>Toplam: ${data.toplam} TL<br>Para Üstü: ${data.paraUstu} TL</span>`;
+            f.innerHTML = `<span class='error'>❌ HATALI!<br>Toplam: ${data.toplam} | P.Üstü: ${data.paraUstu}</span>`;
+            skor.y++;
         }
+        document.getElementById('stats').innerText = `Doğru: ${skor.d} | Yanlış: ${skor.y}`;
     }
 
     yeniMusteri();
